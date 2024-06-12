@@ -27,7 +27,6 @@ obstacle_width = 100
 obstacle_height = 20
 obstacle_speed = 5
 obstacle_color = RED
-obstacle_gap = 200
 obstacles = []
 
 # Score
@@ -55,10 +54,12 @@ def generate_obstacle():
     obstacles.append(pygame.Rect(x, y, obstacle_width, obstacle_height))
 
 def move_obstacles():
+    global obstacle_speed
     for obstacle in obstacles:
         obstacle.y += obstacle_speed
         if obstacle.y > SCREEN_HEIGHT:
             obstacles.remove(obstacle)
+            increase_difficulty()
 
 def check_collision():
     for obstacle in obstacles:
@@ -77,7 +78,7 @@ def show_instructions():
     ]
     y_offset = 100
     for line in instructions:
-        draw_text(line, font, WHITE, SCREEN_WIDTH // 2, y_offset)
+        draw_text(line, font, BLACK, SCREEN_WIDTH // 2, y_offset)
         y_offset += 40
     pygame.display.flip()
     waiting = True
@@ -89,6 +90,26 @@ def show_instructions():
             elif event.type == pygame.KEYDOWN:
                 waiting = False
 
+def game_over():
+    screen.fill(WHITE)
+    draw_text("Game Over", font, RED, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+    draw_text(f"Final Score: {score}", font, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+    draw_text("Press any key to restart", font, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                return
+
+def increase_difficulty():
+    global obstacle_speed
+    if score % 1000 == 0:
+        obstacle_speed += 1
+
 # Show instructions before starting the game
 show_instructions()
 
@@ -99,9 +120,9 @@ while running:
             running = False
 
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
+    if keys[pygame.K_LEFT] and player_x > 0:
         player_x -= player_speed
-    if keys[pygame.K_RIGHT]:
+    if keys[pygame.K_RIGHT] and player_x < SCREEN_WIDTH - player_size:
         player_x += player_speed
 
     screen.fill(WHITE)
@@ -115,7 +136,13 @@ while running:
         generate_obstacle()
 
     if check_collision():
-        running = False
+        game_over()
+        # Reset game
+        obstacles.clear()
+        score = 0
+        obstacle_speed = 5
+        player_x = SCREEN_WIDTH // 2 - player_size // 2
+        show_instructions()
 
     score += 1
     pygame.display.flip()
